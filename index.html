@@ -66,6 +66,8 @@
     .question-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
     .tag { padding: 5px 9px; border-radius: 5px; background: #f2f3f3; color: #414d5c; font-size: 12px; font-weight: 700; }
     .tag.blue { color: var(--blue-dark); background: #eaf3fb; }
+    .tag.correct { color: var(--green); background: #f1faf2; }
+    .tag.incorrect { color: var(--red); background: #fff7ed; }
     .question-text { margin: 0 0 18px; font-size: 17px; line-height: 1.6; white-space: pre-wrap; }
     .choices { display: grid; gap: 10px; }
     .choice {
@@ -246,16 +248,19 @@
     (() => {
       "use strict";
       const STORAGE_KEY = "saa-c03-practice-questions-v1";
+      const ATTEMPTS_STORAGE_KEY = "saa-c03-practice-attempts-v1";
       const $ = (selector) => document.querySelector(selector);
       const $$ = (selector) => Array.from(document.querySelectorAll(selector));
       const form = $("#questionForm");
       const optionEditor = $("#optionEditor");
       let toastTimer;
       let questions = loadQuestions();
+      let attempts = loadAttempts();
       let editingId = null;
       let visibleQuestions = [];
       let shuffledQuestionIds = null;
       let currentIndex = 0;
+      let activeQuestionId = null;
       let checked = false;
       let selected = new Set();
 
@@ -276,6 +281,30 @@
         }
       }
 
+      function loadAttempts() {
+        try {
+          const saved = localStorage.getItem(ATTEMPTS_STORAGE_KEY);
+          if (!saved) return {};
+          const parsed = JSON.parse(saved);
+          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+            throw new Error("Dữ liệu kết quả đã lưu không đúng định dạng.");
+          }
+          return Object.fromEntries(Object.entries(parsed).filter(([id, attempt]) => {
+            const question = questions.find((item) => item.id === id);
+            return question && attempt && typeof attempt.correct === "boolean" &&
+              attempt.questionSignature === questionSignature(question) &&
+              Array.isArray(attempt.answers) && attempt.answers.length > 0 &&
+              attempt.answers.every((answer) => Number.isInteger(answer) && answer >= 0 && answer < question.options.length) &&
+              new Set(attempt.answers).size === attempt.answers.length &&
+              attempt.correct === isSelectionCorrect(question, attempt.answers);
+          }));
+        } catch (error) {
+          console.error("Không thể đọc kết quả ôn tập:", error);
+          showToast("Không thể đọc kết quả đã lưu. Hãy kiểm tra bộ nhớ trình duyệt.");
+          return {};
+        }
+      }
+
       function saveQuestions() {
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(questions));
@@ -287,10 +316,27 @@
         return true;
       }
 
+      function saveAttempts() {
+        try {
+          localStorage.setItem(ATTEMPTS_STORAGE_KEY, JSON.stringify(attempts));
+        } catch (error) {
+          console.error("Không thể lưu kết quả ôn tập:", error);
+          showToast("Không thể lưu kết quả. Bộ nhớ trình duyệt có thể đã đầy hoặc bị chặn.");
+          return false;
+        }
+        return true;
+      }
+
       function escapeHtml(value) {
         return String(value).replace(/[&<>"']/g, (char) => ({
           "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
         })[char]);
+      }
+
+      function questionSignature(question) {
+        return JSON.stringify([
+          question.examCode, question.number, question.text, question.type, question.options, question.answers
+        ]);
       }
 
       function showToast(message) {
@@ -397,13 +443,26 @@
         $("#questionCount").textContent = `${visibleQuestions.length} câu hỏi`;
         const content = $("#practiceContent");
         if (!visibleQuestions.length) {
+          activeQuestionId = null;
           content.innerHTML = `<div class="empty"><strong>Chưa có câu hỏi nào</strong>Thêm câu hỏi ở tab “Quản lý câu hỏi” để bắt đầu ôn tập.</div>`;
           return;
         }
         currentIndex = Math.min(currentIndex, visibleQuestions.length - 1);
         const question = visibleQuestions[currentIndex];
+        if (activeQuestionId !== question.id) {
+          activeQuestionId = question.id;
+          const attempt = attempts[question.id];
+          selected = new Set(attempt ? attempt.answers : []);
+          checked = Boolean(attempt);
+        }
         const progress = Math.round(((currentIndex + 1) / visibleQuestions.length) * 100);
         const isMulti = question.type === "multi";
+        const completedAttempts = visibleQuestions
+          .map((item) => attempts[item.id])
+          .filter(Boolean);
+        const correctAttempts = completedAttempts.filter((attempt) => attempt.correct).length;
+        $("#questionCount").textContent =
+          `${visibleQuestions.length} câu · Đã kiểm tra ${completedAttempts.length} (${correctAttempts} đúng, ${completedAttempts.length - correctAttempts} sai)`;
         content.innerHTML = `
           <div class="progress-row"><span>Câu ${currentIndex + 1} / ${visibleQuestions.length}</span><span>${progress}%</span></div>
           <div class="progress"><span style="width:${progress}%"></span></div>
@@ -412,6 +471,7 @@
               <span class="tag blue">${escapeHtml(question.examCode)}</span>
               <span class="tag">Câu ${escapeHtml(question.number)}</span>
               <span class="tag">${isMulti ? "Chọn nhiều đáp án" : "Chọn 1 đáp án"}</span>
+              ${checked ? `<span class="tag ${attempts[question.id].correct ? "correct" : "incorrect"}">${attempts[question.id].correct ? "Đã làm đúng" : "Đã làm sai"}</span>` : ""}
             </div>
             <p class="question-text">${escapeHtml(question.text)}</p>
             <div class="choices">
@@ -454,18 +514,28 @@
             return;
           }
           checked = true;
+          attempts[question.id] = {
+            answers: [...selected],
+            correct: isAnswerCorrect(question),
+            questionSignature: questionSignature(question)
+          };
+          saveAttempts();
           renderPractice();
         });
       }
 
       function isAnswerCorrect(question) {
-        return selected.size === question.answers.length && question.answers.every((answer) => selected.has(answer));
+        return isSelectionCorrect(question, [...selected]);
+      }
+
+      function isSelectionCorrect(question, answers) {
+        const selectedAnswers = new Set(answers);
+        return selectedAnswers.size === question.answers.length &&
+          question.answers.every((answer) => selectedAnswers.has(answer));
       }
 
       function moveQuestion(amount) {
         currentIndex += amount;
-        selected = new Set();
-        checked = false;
         renderPractice();
       }
 
@@ -518,6 +588,9 @@
           questions = previous;
           return;
         }
+        delete attempts[id];
+        saveAttempts();
+        if (activeQuestionId === id) activeQuestionId = null;
         shuffledQuestionIds = null;
         if (editingId === id) resetForm();
         renderManageList();
@@ -623,6 +696,11 @@
           if (!saveQuestions()) {
             questions = previous;
             return;
+          }
+          if (wasEditing) {
+            delete attempts[record.id];
+            saveAttempts();
+            if (activeQuestionId === record.id) activeQuestionId = null;
           }
           shuffledQuestionIds = null;
           renderManageList();
