@@ -122,6 +122,10 @@
     .manage-copy span { display: block; overflow: hidden; color: var(--muted); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
     .manage-controls { display: flex; gap: 7px; flex-shrink: 0; }
     .manage-controls .btn { padding: 7px 12px; font-size: 12px; }
+    .data-tools { display: grid; gap: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 15px; }
+    .data-tools h3 { margin: 0; font-size: 15px; }
+    .data-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
+    .data-actions select { width: min(300px, 100%); }
     .hidden { display: none !important; }
     .toast { position: fixed; right: 20px; bottom: 20px; z-index: 5; max-width: min(400px, calc(100% - 40px)); border-radius: 7px; padding: 13px 17px; color: #fff; background: var(--navy); box-shadow: 0 5px 20px #0003; }
     footer { margin-top: 18px; color: var(--muted); font-size: 12px; text-align: center; }
@@ -220,6 +224,17 @@
             <button id="saveQuestion" class="btn orange" type="submit">Lưu câu hỏi</button>
           </div>
         </form>
+        <section class="data-tools" aria-labelledby="dataToolsHeading">
+          <h3 id="dataToolsHeading">Sao lưu bộ đề</h3>
+          <div class="data-actions">
+            <label class="helper" for="exportExam">Xuất</label>
+            <select id="exportExam" aria-label="Chọn bộ đề cần xuất"></select>
+            <button id="exportQuestions" class="btn secondary" type="button">Export JSON</button>
+            <button id="importQuestions" class="btn secondary" type="button">Import JSON</button>
+            <input id="importFile" class="hidden" type="file" accept=".json,application/json">
+          </div>
+          <span class="helper">Import sẽ thêm câu hỏi mới; nếu có câu trùng mã đề và số thứ tự, toàn bộ tệp sẽ bị từ chối.</span>
+        </section>
         <div id="manageList" class="manage-list"></div>
       </div>
     </section>
@@ -353,6 +368,16 @@
         return Array.from(new Set(questions.map((question) => question.examCode))).sort((a, b) => a.localeCompare(b, "vi"));
       }
 
+      function renderExportExamOptions(preferred = null) {
+        const select = $("#exportExam");
+        const previous = preferred ?? select.value;
+        const codes = getExamCodes();
+        select.innerHTML = `<option value="">Tất cả bộ đề (${questions.length})</option>` +
+          codes.map((code) => `<option value="${escapeHtml(code)}">${escapeHtml(code)} (${questions.filter((q) => q.examCode === code).length})</option>`).join("");
+        select.value = codes.includes(previous) ? previous : "";
+        $("#exportQuestions").disabled = questions.length === 0;
+      }
+
       function renderExamFilter(preferred = null) {
         const filter = $("#examFilter");
         const previous = preferred ?? filter.value;
@@ -445,6 +470,7 @@
       }
 
       function renderManageList() {
+        renderExportExamOptions();
         const list = $("#manageList");
         if (!questions.length) {
           list.innerHTML = `<div class="empty"><strong>Danh sách đang trống</strong>Câu hỏi đã lưu sẽ xuất hiện tại đây.</div>`;
@@ -499,6 +525,117 @@
         showToast("Đã xóa câu hỏi.");
       }
 
+      function createQuestionId() {
+        return window.crypto && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      }
+
+      function exportQuestions() {
+        const examCode = $("#exportExam").value;
+        const exportedQuestions = questions
+          .filter((question) => !examCode || question.examCode === examCode)
+          .sort((a, b) => a.examCode.localeCompare(b.examCode, "vi") || a.number - b.number);
+        if (!exportedQuestions.length) {
+          showToast("Không có câu hỏi để xuất.");
+          return;
+        }
+        const data = {
+          format: "saa-c03-practice-questions",
+          version: 1,
+          exportedAt: new Date().toISOString(),
+          questions: exportedQuestions
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const filename = (examCode || "tat-ca-bo-de").replace(/[^a-z0-9_-]/gi, "-");
+        link.href = url;
+        link.download = `${filename}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        showToast(`Đã xuất ${exportedQuestions.length} câu hỏi ra JSON.`);
+      }
+
+      function validateImportedQuestions(parsed) {
+        const imported = Array.isArray(parsed)
+          ? parsed
+          : parsed && parsed.format === "saa-c03-practice-questions" && parsed.version === 1
+            ? parsed.questions
+            : null;
+        if (!Array.isArray(imported) || imported.length === 0) {
+          throw new Error("Tệp JSON không đúng định dạng hoặc không có câu hỏi.");
+        }
+
+        const keys = new Set();
+        return imported.map((question, index) => {
+          const label = `Câu hỏi thứ ${index + 1}`;
+          if (!question || typeof question !== "object" || Array.isArray(question)) {
+            throw new Error(`${label} không đúng cấu trúc.`);
+          }
+          const examCode = typeof question.examCode === "string" ? question.examCode.trim() : "";
+          const text = typeof question.text === "string" ? question.text.trim() : "";
+          const note = question.note === undefined ? "" : question.note;
+          if (!examCode || examCode.length > 40 || !Number.isInteger(question.number) || question.number < 1 ||
+              !text || (question.type !== "single" && question.type !== "multi") ||
+              !Array.isArray(question.options) || question.options.length < 2 || question.options.length > 6 ||
+              question.options.some((option) => typeof option !== "string" || !option.trim() || option.trim().length > 500) ||
+              !Array.isArray(question.answers) || question.answers.some((answer) => !Number.isInteger(answer) || answer < 0 || answer >= question.options.length) ||
+              new Set(question.answers).size !== question.answers.length ||
+              (question.type === "single" && question.answers.length !== 1) ||
+              (question.type === "multi" && question.answers.length < 2) ||
+              typeof note !== "string") {
+            throw new Error(`${label} có dữ liệu không hợp lệ.`);
+          }
+          const key = `${examCode.toLocaleLowerCase()}::${question.number}`;
+          if (keys.has(key)) {
+            throw new Error(`Tệp JSON có câu trùng ${examCode} · Câu ${question.number}.`);
+          }
+          keys.add(key);
+          return {
+            id: createQuestionId(),
+            examCode,
+            number: question.number,
+            text,
+            type: question.type,
+            options: question.options.map((option) => option.trim()),
+            answers: [...question.answers],
+            note: note.trim()
+          };
+        });
+      }
+
+      async function importQuestions(file) {
+        try {
+          const parsed = JSON.parse(await file.text());
+          const imported = validateImportedQuestions(parsed);
+          const existingKeys = new Set(questions.map((question) =>
+            `${question.examCode.toLocaleLowerCase()}::${question.number}`));
+          const duplicate = imported.find((question) =>
+            existingKeys.has(`${question.examCode.toLocaleLowerCase()}::${question.number}`));
+          if (duplicate) {
+            throw new Error(`Đã tồn tại ${duplicate.examCode} · Câu ${duplicate.number}; không có dữ liệu nào được nhập.`);
+          }
+          const previous = questions;
+          questions = [...questions, ...imported];
+          if (!saveQuestions()) {
+            questions = previous;
+            return;
+          }
+          shuffledQuestionIds = null;
+          renderManageList();
+          renderPractice();
+          showToast(`Đã nhập ${imported.length} câu hỏi.`);
+        } catch (error) {
+          console.error("Không thể nhập bộ đề JSON:", error);
+          showToast(error instanceof SyntaxError
+            ? "Tệp không phải JSON hợp lệ."
+            : error.message || "Không thể đọc tệp JSON.");
+        }
+      }
+
       $$(".tab").forEach((button) => button.addEventListener("click", () => switchTab(button.dataset.tab)));
       $$('input[name="questionType"]').forEach((input) => input.addEventListener("change", () => setType(input.value)));
       $("#addOption").addEventListener("click", () => {
@@ -507,6 +644,13 @@
         if (values.length < 6) renderOptionEditor([...values, ""], answers);
       });
       $("#cancelEdit").addEventListener("click", resetForm);
+      $("#exportQuestions").addEventListener("click", exportQuestions);
+      $("#importQuestions").addEventListener("click", () => $("#importFile").click());
+      $("#importFile").addEventListener("change", (event) => {
+        const [file] = event.target.files;
+        if (file) importQuestions(file);
+        event.target.value = "";
+      });
       $("#examFilter").addEventListener("change", () => {
         shuffledQuestionIds = null;
         currentIndex = 0;
@@ -559,7 +703,7 @@
           return;
         }
         const record = {
-          id: editingId || (window.crypto && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`),
+          id: editingId || createQuestionId(),
           examCode, number, text, type, options, answers, note: $("#questionNote").value.trim()
         };
         const wasEditing = Boolean(editingId);
