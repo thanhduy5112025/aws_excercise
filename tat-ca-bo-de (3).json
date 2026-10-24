@@ -1,0 +1,444 @@
+{
+  "format": "saa-c03-practice-questions",
+  "version": 1,
+  "exportedAt": "2026-10-24T07:46:54.385Z",
+  "questions": [
+    {
+      "id": "f203cfbf-b45b-4eea-a3e1-7bc048ee90b2",
+      "examCode": "CertPro Deep Dive",
+      "number": 1,
+      "text": "A bicycle sharing company is developing a multi-tier architecture to track the location of its bicycles during peak operating hours. The company wants to use these data points in its existing analytics platform. A solutions architect must determine the most viable multi-tier option to support this architecture. The data points must be accessible from the REST API.\nWhich action meets these requirements for storing and retrieving location data?",
+      "type": "single",
+      "options": [
+        "A. Use Amazon Athena with Amazon S3.",
+        "B. Use Amazon API Gateway with AWS Lambda.",
+        "C. Use Amazon QuickSight with Amazon Redshift.",
+        "D. Use Amazon API Gateway with Amazon Kinesis Data Analytics."
+      ],
+      "answers": [
+        3
+      ],
+      "note": ""
+    },
+    {
+      "id": "1bf2ed9d-2f8c-4b9c-bd9b-9d925f8246af",
+      "examCode": "CertPro Deep Dive",
+      "number": 2,
+      "text": "A solutions architect needs to implement a solution to reduce a company's storage costs. All the company's data is in the Amazon S3 Standard storage class. The company must keep all data for at least 25 years. Data from the most recent 2 years must be highly available and immediately retrievable.\nWhich solution will meet these requirements?",
+      "type": "single",
+      "options": [
+        "Set up an S3 Lifecycle policy to transition objects to S3 Glacier Deep Archive immediately.",
+        "Set up an S3 Lifecycle policy to transition objects to S3 Glacier Deep Archive after 2 years.",
+        "Use S3 Intelligent-Tiering. Activate the archiving option to ensure that data is archived in S3 Glacier Deep Archive.",
+        "Set up an S3 Lifecycle policy to transition objects to S3 One Zone-Infrequent Access (S3 One Zone-IA) immediately and to S3 Glacier Deep Archive after 2 years."
+      ],
+      "answers": [
+        1
+      ],
+      "note": ""
+    },
+    {
+      "id": "9e382067-f4ae-40be-95a2-d62cfa3a5265",
+      "examCode": "CertPro Deep Dive",
+      "number": 3,
+      "text": "A company operates a food delivery service. Because of recent growth, the company's order processing system is experiencing scaling problems during peak traffic hours. The current architecture includes Amazon EC2 instances in an Auto Scaling group that collect orders from an application. A second group of EC2 instances in an Auto Scaling group fulfills the orders.\n\nThe order collection process occurs quickly, but the order fulfillment process can take longer. Data must not be lost because of a scaling event.\n\nA solutions architect must ensure that the order collection process and the order fulfillment process can both scale adequately during peak traffic hours.\n\nWhich solution will meet these requirements?",
+      "type": "single",
+      "options": [
+        "Use Amazon CloudWatch to monitor the CPUUtilization metric for each instance in both Auto Scaling groups. Configure each Auto Scaling group's minimum capacity to meet its peak workload value.",
+        "Use Amazon CloudWatch to monitor the CPUUtilization metric for each instance in both Auto Scaling groups. Configure a CloudWatch alarm to invoke an Amazon Simple Notification Service (Amazon SNS) topic to create additional Auto Scaling groups on demand.",
+        "Provision two Amazon Simple Queue Service (Amazon SQS) queues. Use one SQS queue for order collection. Use the second SQS queue for order fulfillment. Configure the EC2 instances to poll their respective queues. Scale the Auto Scaling groups based on notifications that the queues send.",
+        "Provision two Amazon Simple Queue Service (Amazon SQS) queues. Use one SQS queue for order collection. Use the second SQS queue for order fulfillment. Configure the EC2 instances to poll their respective queues. Scale the Auto Scaling groups based on the number of messages in each queue."
+      ],
+      "answers": [
+        3
+      ],
+      "note": ""
+    },
+    {
+      "id": "3edbb86e-c0b3-4cb5-81ed-df79163eef64",
+      "examCode": "CertPro Deep Dive",
+      "number": 4,
+      "text": "A company produces batch data that comes from different databases. The company also produces live stream data from network sensors and application APIs. The company needs to consolidate all the data into one place for business analytics. The company needs to process the incoming data and then stage the data in different Amazon S3 buckets. Teams will later run one-time queries and import the data into a business intelligence tool to show key performance indicators (KPIs).\n\nWhich combination of steps will meet these requirements with the LEAST operational overhead? (Choose two.)",
+      "type": "multi",
+      "options": [
+        "Use Amazon Athena for one-time queries. Use Amazon QuickSight to create dashboards for KPIs.",
+        "Use Amazon Kinesis Data Analytics for one-time queries. Use Amazon QuickSight to create dashboards for KPIs.",
+        "Create custom AWS Lambda functions to move the individual records from the databases to an Amazon Redshift cluster.",
+        "Use an AWS Glue extract, transform, and load (ETL) job to convert the data into JSON format. Load the data into multiple Amazon OpenSearch Service (Amazon Elasticsearch Service) clusters.",
+        "Use blueprints in AWS Lake Formation to identify the data that can be ingested into a data lake. Use AWS Glue to crawl the source, extract the data, and load the data into Amazon S3 in Apache Parquet format."
+      ],
+      "answers": [
+        0,
+        4
+      ],
+      "note": ""
+    },
+    {
+      "id": "c7eb5c6a-d77a-4bd4-881a-69475a987284",
+      "examCode": "CertPro Deep Dive",
+      "number": 5,
+      "text": "A company performs monthly maintenance on its AWS infrastructure. During these maintenance activities, the company needs to rotate the credentials for its Amazon RDS for MySQL databases across multiple AWS Regions.   Which solution will meet these requirements with the LEAST operational overhead?",
+      "type": "single",
+      "options": [
+        "Store the credentials as secrets in AWS Secrets Manager. Use multi-Region secret replication for the required Regions. Configure Secrets Manager to rotate the secrets on a schedule.",
+        "Store the credentials as secrets in AWS Systems Manager by creating a secure string parameter. Use multi-Region secret replication for the required Regions. Configure Systems Manager to rotate the secrets on a schedule.",
+        "Store the credentials in an Amazon S3 bucket that has server-side encryption (SSE) enabled. Use Amazon EventBridge (Amazon CloudWatch Events) to invoke an AWS Lambda function to rotate the credentials.",
+        "Encrypt the credentials as secrets by using AWS Key Management Service (AWS KMS) multi-Region customer managed keys. Store the secrets in an Amazon DynamoDB global table. Use an AWS Lambda function to retrieve the secrets from DynamoDB. Use the RDS API to rotate the secrets."
+      ],
+      "answers": [
+        0
+      ],
+      "note": ""
+    },
+    {
+      "id": "cd3eb4e1-aaec-4495-b325-45ede07577cc",
+      "examCode": "CertPro Deep Dive",
+      "number": 6,
+      "text": "A company hosts an application in a private subnet. The company has already integrated the application with Amazon Cognito. The company uses an Amazon Cognito user pool to authenticate users.   \nThe company needs to modify the application so the application can securely store user documents in an Amazon S3 bucket. \nWhich combination of steps will securely integrate Amazon S3 with the application? (Choose two.)",
+      "type": "multi",
+      "options": [
+        "Create an Amazon Cognito identity pool to generate secure Amazon S3 access tokens for users when they successfully log in.",
+        "Use the existing Amazon Cognito user pool to generate Amazon S3 access tokens for users when they successfully log in.",
+        "Create an Amazon S3 VPC endpoint in the same VPC where the company hosts the application.",
+        "Create a NAT gateway in the VPC where the company hosts the application. Assign a policy to the S3 bucket to deny any request that is not initiated from Amazon Cognito.",
+        "Attach a policy to the S3 bucket that allows access only from the users' IP addresses."
+      ],
+      "answers": [
+        0,
+        2
+      ],
+      "note": ""
+    },
+    {
+      "id": "828da21f-6675-4048-be13-a60ca0192e28",
+      "examCode": "CertPro Deep Dive",
+      "number": 7,
+      "text": "A company has an automobile sales website that stores its listings in a database on Amazon RDS. When an automobile is sold, the listing needs to be removed from the website and the data must be sent to multiple target systems.\n\nWhich design should a solutions architect recommend?",
+      "type": "single",
+      "options": [
+        "Create an AWS Lambda function triggered when the database on Amazon RDS is updated to send the information to an Amazon Simple Queue Service (Amazon SQS) queue for the targets to consume.",
+        "Create an AWS Lambda function triggered when the database on Amazon RDS is updated to send the information to an Amazon Simple Queue Service (Amazon SQS) FIFO queue for the targets to consume.",
+        "Subscribe to an RDS event notification and send an Amazon Simple Queue Service (Amazon SQS) queue fanned out to multiple Amazon Simple Notification Service (Amazon SNS) topics. Use AWS Lambda functions to update the targets.",
+        "Subscribe to an RDS event notification and send an Amazon Simple Notification Service (Amazon SNS) topic fanned out to multiple Amazon Simple Queue Service (Amazon SQS) queues. Use AWS Lambda functions to update the targets."
+      ],
+      "answers": [
+        3
+      ],
+      "note": ""
+    },
+    {
+      "id": "a1496234-f0bb-42fa-8ffb-0a0abe2caf00",
+      "examCode": "CertPro Deep Dive",
+      "number": 8,
+      "text": "A company has a small Python application that processes JSON documents and outputs the results to an on-premises SQL database. The application runs thousands of times each day. The company wants to move the application to the AWS Cloud. The company needs a highly available solution that maximizes scalability and minimizes operational overhead.\n\nWhich solution will meet these requirements?",
+      "type": "single",
+      "options": [
+        "Place the JSON documents in an Amazon S3 bucket. Run the Python code on multiple Amazon EC2 instances to process the documents. Store the results in an Amazon Aurora DB cluster.",
+        "Place the JSON documents in an Amazon S3 bucket. Create an AWS Lambda function that runs the Python code to process the documents as they arrive in the S3 bucket. Store the results in an Amazon Aurora DB cluster.",
+        "Place the JSON documents in an Amazon Elastic Block Store (Amazon EBS) volume. Use the EBS Multi-Attach feature to attach the volume to multiple Amazon EC2 instances. Run the Python code on the EC2 instances to process the documents. Store the results on an Amazon RDS DB instance.",
+        "Place the JSON documents in an Amazon Simple Queue Service (Amazon SQS) queue as messages. Deploy the Python code as a container on an Amazon Elastic Container Service (Amazon ECS) cluster that is configured with the Amazon EC2 launch type. Use the container to process the SQS messages. Store the results on an Amazon RDS DB instance."
+      ],
+      "answers": [
+        1
+      ],
+      "note": ""
+    },
+    {
+      "id": "f7611205-6986-4a39-84c7-c3da0d465af8",
+      "examCode": "CertPro Deep Dive",
+      "number": 9,
+      "text": "A company has an AWS Glue extract, transform, and load (ETL) job that runs every day at the same time. The job processes XML data that is in an Amazon S3 bucket. New data is added to the S3 bucket every day. A solutions architect notices that AWS Glue is processing all the data during each run.   \n\nWhat should the solutions architect do to prevent AWS Glue from reprocessing old data?",
+      "type": "single",
+      "options": [
+        "Edit the job to use job bookmarks.",
+        "Edit the job to delete data after the data is processed.",
+        "Edit the job by setting the NumberOfWorkers field to 1.",
+        "Use a FindMatches machine learning (ML) transform."
+      ],
+      "answers": [
+        0
+      ],
+      "note": ""
+    },
+    {
+      "id": "3dd0cc2d-fb24-4b8d-8dad-654189213e08",
+      "examCode": "CertPro Deep Dive",
+      "number": 10,
+      "text": "A company has created an image analysis application in which users can upload photos and add photo frames to their images. The users upload images and metadata to indicate which photo frames they want to add to their images. The application uses a single Amazon EC2 instance and Amazon DynamoDB to store the metadata.   \nThe application is becoming more popular, and the number of users is increasing. The company expects the number of concurrent users to vary significantly depending on the time of day and day of week. The company must ensure that the application can scale to meet the needs of the growing user base.   \nWhich solution meats these requirements?",
+      "type": "single",
+      "options": [
+        "Use AWS Lambda to process the photos. Store the photos and metadata in DynamoDB.",
+        "Use Amazon Kinesis Data Firehose to process the photos and to store the photos and metadata.",
+        "Use AWS Lambda to process the photos. Store the photos in Amazon S3. Retain DynamoDB to store the metadata.",
+        "Increase the number of EC2 instances to three. Use Provisioned IOPS SSD (io2) Amazon Elastic Block Store (Amazon EBS) volumes to store the photos and metadata."
+      ],
+      "answers": [
+        2
+      ],
+      "note": ""
+    },
+    {
+      "id": "3a631c30-8e08-4801-b64d-f7f9a45b340a",
+      "examCode": "CertPro Deep Dive",
+      "number": 11,
+      "text": "A solutions architect must design a solution that uses Amazon CloudFront with an Amazon S3 origin to store a static website. The company’s security policy requires that all website traffic be inspected by AWS WAF.\n\nHow should the solutions architect comply with these requirements?",
+      "type": "single",
+      "options": [
+        "Configure an S3 bucket policy to accept requests coming from the AWS WAF Amazon Resource Name (ARN) only.",
+        "Configure Amazon CloudFront to forward all incoming requests to AWS WAF before requesting content from the S3 origin.",
+        "Configure a security group that allows Amazon CloudFront IP addresses to access Amazon S3 only. Associate AWS WAF to CloudFront.",
+        "Configure Amazon CloudFront and Amazon S3 to use an origin access identity (OAI) to restrict access to the S3 bucket. Enable AWS WAF on the distribution."
+      ],
+      "answers": [
+        3
+      ],
+      "note": ""
+    },
+    {
+      "id": "826ce17a-0384-43fc-ab5f-1bf7b85f6141",
+      "examCode": "CertPro Deep Dive",
+      "number": 12,
+      "text": "A company's image-hosting website gives users around the world the ability to upload, view, and download images from their mobile devices. The company currently hosts the static website in an Amazon S3 bucket.\n\nBecause of the website's growing popularity, the website's performance has decreased. Users have reported latency issues when they upload and download images.\n\nThe company must improve the performance of the website.\n\nWhich solution will meet these requirements with the LEAST implementation effort?",
+      "type": "single",
+      "options": [
+        "Configure an Amazon CloudFront distribution for the S3 bucket to improve the download performance. Enable S3 Transfer Acceleration to improve the upload performance.",
+        "Configure Amazon EC2 instances of the right sizes in multiple AWS Regions. Migrate the application to the EC2 instances. Use an Application Load Balancer to distribute the website traffic equally among the EC2 instances. Configure AWS Global Accelerator to address global demand with low latency.",
+        "Configure an Amazon CloudFront distribution that uses the S3 bucket as an origin to improve the download performance. Configure the application to use CloudFront to upload images to improve the upload performance. Create S3 buckets in multiple AWS Regions. Configure replication rules for the buckets to replicate users' data based on the users' location. Redirect downloads to the S3 bucket that is closest to each user's location.",
+        "Configure AWS Global Accelerator for the S3 bucket to improve network performance. Create an endpoint for the application to use Global Accelerator instead of the S3 bucket."
+      ],
+      "answers": [
+        0
+      ],
+      "note": ""
+    },
+    {
+      "id": "1050364f-f692-4575-a245-b9b584889474",
+      "examCode": "CertPro Deep Dive",
+      "number": 13,
+      "text": "A global company is using Amazon API Gateway to design REST APIs for its loyalty club users in the us-east-1 Region and the ap-southeast-2 Region. A solutions architect must design a solution to protect these API Gateway managed REST APIs across multiple accounts from SQL injection and cross-site scripting attacks.   \nWhich solution will meet these requirements with the LEAST amount of administrative effort?",
+      "type": "single",
+      "options": [
+        "Set up AWS WAF in both Regions. Associate Regional web ACLs with an API stage.",
+        "Set up AWS Firewall Manager in both Regions. Centrally configure AWS WAF rules.",
+        "Set up AWS Shield in bath Regions. Associate Regional web ACLs with an API stage.",
+        "Set up AWS Shield in one of the Regions. Associate Regional web ACLs with an API stage."
+      ],
+      "answers": [
+        1
+      ],
+      "note": ""
+    },
+    {
+      "id": "5fc60eef-c4d2-4c17-9544-5638fe8fa915",
+      "examCode": "CertPro Deep Dive",
+      "number": 14,
+      "text": "A solutions architect is optimizing a website for an upcoming musical event. Videos of the performances will be streamed in real time and then will be available on demand. The event is expected to attract a global online audience.\n\nWhich service will improve the performance of both the real-time and on-demand streaming?",
+      "type": "single",
+      "options": [
+        "Amazon CloudFront",
+        "AWS Global Accelerator",
+        "Amazon Route 53",
+        "Amazon S3 Transfer Acceleration"
+      ],
+      "answers": [
+        0
+      ],
+      "note": ""
+    },
+    {
+      "id": "b960d2cb-a4c9-48e7-bc03-0c1094c1d12f",
+      "examCode": "CertPro Deep Dive",
+      "number": 15,
+      "text": "A solutions architect needs to help a company optimize the cost of running an application on AWS. The application will use Amazon EC2 instances, AWS Fargate, and AWS Lambda for compute within the architecture.   \n\nThe EC2 instances will run the data ingestion layer of the application. EC2 usage will be sporadic and unpredictable. Workloads that run on EC2 instances can be interrupted at any time. The application front end will run on Fargate, and Lambda will serve the API layer. The front-end utilization and API layer utilization will be predictable over the course of the next year.\n\nWhich combination of purchasing options will provide the MOST cost-effective solution for hosting this application? (Choose two.)",
+      "type": "multi",
+      "options": [
+        "Use Spot Instances for the data ingestion layer",
+        "Use On-Demand Instances for the data ingestion layer",
+        "Purchase a 1-year Compute Savings Plan for the front end and API layer",
+        "Purchase 1-year All Upfront Reserved instances for the data ingestion layer",
+        "Purchase a 1-year EC2 instance Savings Plan for the front end and API layer"
+      ],
+      "answers": [
+        0,
+        2
+      ],
+      "note": ""
+    },
+    {
+      "id": "2b61ccdf-c811-4d2d-9b2c-78fd1cb68e8f",
+      "examCode": "CertPro Deep Dive",
+      "number": 16,
+      "text": "A company has a data ingestion workflow that includes the following components:\nAn Amazon Simple Notification Service (Amazon SNS) topic that receives notifications about new data deliveries\nAn AWS Lambda function that processes and stores the data\nThe ingestion workflow occasionally fails because of network connectivity issues. When failure occurs, the corresponding data is not ingested unless the company manually reruns the job.\n\nWhat should a solutions architect do to ensure that all notifications are eventually processed?",
+      "type": "single",
+      "options": [
+        "Configure the Lambda function for deployment across multiple Availability Zones.",
+        "Modify the Lambda function's configuration to increase the CPU and memory allocations for the function.",
+        "Configure the SNS topic's retry strategy to increase both the number of retries and the wait time between retries.",
+        "Configure an Amazon Simple Queue Service (Amazon SQS) queue as the on-failure destination. Modify the Lambda function to process messages in the queue."
+      ],
+      "answers": [
+        3
+      ],
+      "note": ""
+    },
+    {
+      "id": "24017d8f-d8c1-4e7b-bf7e-7f7528329194",
+      "examCode": "CertPro Deep Dive",
+      "number": 17,
+      "text": "A company runs multiple workloads on virtual machines (VMs) in an on-premises data center. The company is expanding rapidly. The on-premises data center is not able to scale fast enough to meet business needs. The company wants to migrate the workloads to AWS.\n\nThe migration is time sensitive. The company wants to use a lift-and-shift strategy for non-critical workloads.\n\nWhich combination of steps will meet these requirements? (Choose three.)",
+      "type": "multi",
+      "options": [
+        "Use the AWS Schema Conversion Tool (AWS SCT) to collect data about the VMs.",
+        "Use AWS Application Migration Service. Install the AWS Replication Agent on the VMs.",
+        "Complete the initial replication of the VMs. Launch test instances to perform acceptance tests on the VMs.",
+        "Stop all operations on the VMs. Launch a cutover instance.",
+        "Use AWS App2Container (A2C) to collect data about the VMs.",
+        "Use AWS Database Migration Service (AWS DMS) to migrate the VMs."
+      ],
+      "answers": [
+        1,
+        2,
+        3
+      ],
+      "note": ""
+    },
+    {
+      "id": "c891b467-8eb5-4e62-a22d-bfbd1664ddfa",
+      "examCode": "CertPro Deep Dive",
+      "number": 18,
+      "text": "A security team wants to limit access to specific services or actions in all of the team's AWS accounts. All accounts belong to a large organization in AWS Organizations. The solution must be scalable and there must be a single point where permissions can be maintained.\n\nWhat should a solutions architect do to accomplish this?",
+      "type": "single",
+      "options": [
+        "Create an ACL to provide access to the services or actions.",
+        "Create a security group to allow accounts and attach it to user groups.",
+        "Create cross-account roles in each account to deny access to the services or actions.",
+        "Create a service control policy in the root organizational unit to deny access to the services or actions."
+      ],
+      "answers": [
+        3
+      ],
+      "note": ""
+    },
+    {
+      "id": "9bc8cc4f-9219-4abc-a681-5b33ca8c270f",
+      "examCode": "CertPro Deep Dive",
+      "number": 19,
+      "text": "A company needs to retain application log files for a critical application for 10 years. The application team regularly accesses logs from the past month for troubleshooting, but logs older than 1 month are rarely accessed. The application generates more than 10 TB of logs per month. \n\nWhich storage option meets these requirements MOST cost-effectively?",
+      "type": "single",
+      "options": [
+        "Store the logs in Amazon S3. Use AWS Backup to move logs more than 1 month old to S3 Glacier Deep Archive.",
+        "Store the logs in Amazon S3. Use S3 Lifecycle policies to move logs more than 1 month old to S3 Glacier Deep Archive.",
+        "Store the logs in Amazon CloudWatch Logs. Use AWS Backup to move logs more than 1 month old to S3 Glacier Deep Archive.",
+        "Store the logs in Amazon CloudWatch Logs. Use Amazon S3 Lifecycle policies to move logs more than 1 month old to S3 Glacier Deep Archive."
+      ],
+      "answers": [
+        1
+      ],
+      "note": ""
+    },
+    {
+      "id": "9ba417c7-6d26-4700-8b5b-d20a3e1b16fc",
+      "examCode": "CertPro Deep Dive",
+      "number": 20,
+      "text": "A medical records company is hosting an application on Amazon EC2 instances. The application processes customer data files that are stored on Amazon S3. The EC2 instances are hosted in public subnets. The EC2 instances access Amazon S3 over the internet, but they do not require any other network access.\n\nA new requirement mandates that the network traffic for file transfers take a private route and not be sent over the internet.\n\nWhich change to the network architecture should a solutions architect recommend to meet this requirement?",
+      "type": "single",
+      "options": [
+        "Create a NAT gateway. Configure the route table for the public subnets to send traffic to Amazon S3 through the NAT gateway.",
+        "Configure the security group for the EC2 instances to restrict outbound traffic so that only traffic to the S3 prefix list is permitted.",
+        "Move the EC2 instances to private subnets. Create a VPC endpoint for Amazon S3, and link the endpoint to the route table for the private subnets.",
+        "Remove the internet gateway from the VPC. Set up an AWS Direct Connect connection, and route traffic to Amazon S3 over the Direct Connect connection."
+      ],
+      "answers": [
+        2
+      ],
+      "note": ""
+    },
+    {
+      "id": "08a6c2e1-fe8c-409e-b24a-94fae8b48d30",
+      "examCode": "CertPro Deep Dive",
+      "number": 21,
+      "text": "A company is concerned about the security of its public web application due to recent web attacks. The application uses an Application Load Balancer (ALB). A solutions architect must reduce the risk of DDoS attacks against the application.\n\nWhat should the solutions architect do to meet this requirement?",
+      "type": "single",
+      "options": [
+        "Add an Amazon Inspector agent to the ALB.",
+        "Configure Amazon Macie to prevent attacks.",
+        "Enable AWS Shield Advanced to prevent attacks.",
+        "Configure Amazon GuardDuty to monitor the ALB."
+      ],
+      "answers": [
+        2
+      ],
+      "note": ""
+    },
+    {
+      "id": "f17b573d-0099-4f74-81de-1cadf762627f",
+      "examCode": "CertPro Deep Dive",
+      "number": 22,
+      "text": "A company runs its ecommerce application on AWS. Every new order is published as a message in a RabbitMQ queue that runs on an Amazon EC2 instance in a single Availability Zone. These messages are processed by a different application that runs on a separate EC2 instance. This application stores the details in a PostgreSQL database on another EC2 instance. All the EC2 instances are in the same Availability Zone.   \n\nThe company needs to redesign its architecture to provide the highest availability with the least operational overhead.   \n\nWhat should a solutions architect do to meet these requirements?",
+      "type": "single",
+      "options": [
+        "Migrate the queue to a redundant pair (active/standby) of RabbitMQ instances on Amazon MQ. Create a Multi-AZ Auto Scaling group for EC2 instances that host the application. Create another Multi-AZ Auto Scaling group for EC2 instances that host the PostgreSQL database.",
+        "Migrate the queue to a redundant pair (active/standby) of RabbitMQ instances on Amazon MQ. Create a Multi-AZ Auto Scaling group for EC2 instances that host the application. Migrate the database to run on a Multi-AZ deployment of Amazon RDS for PostgreSQL.",
+        "Create a Multi-AZ Auto Scaling group for EC2 instances that host the RabbitMQ queue. Create another Multi-AZ Auto Scaling group for EC2 instances that host the application. Migrate the database to run on a Multi-AZ deployment of Amazon RDS for PostgreSQL.",
+        "Create a Multi-AZ Auto Scaling group for EC2 instances that host the RabbitMQ queue. Create another Multi-AZ Auto Scaling group for EC2 instances that host the application. Create a third Multi-AZ Auto Scaling group for EC2 instances that host the PostgreSQL database"
+      ],
+      "answers": [
+        1
+      ],
+      "note": ""
+    },
+    {
+      "id": "da0b3c5c-3d48-449d-a242-93c9b65aff88",
+      "examCode": "CertPro Deep Dive",
+      "number": 23,
+      "text": "A company collects data for temperature, humidity, and atmospheric pressure in cities across multiple continents. The average volume of data that the company collects from each site daily is 500 GB. Each site has a high-speed Internet connection.   The company wants to aggregate the data from all these global sites as quickly as possible in a single Amazon S3 bucket. The solution must minimize operational complexity.   Which solution meets these requirements?",
+      "type": "single",
+      "options": [
+        "Turn on S3 Transfer Acceleration on the destination S3 bucket. Use multipart uploads to directly upload site data to the destination S3 bucket.",
+        "Upload the data from each site to an S3 bucket in the closest Region. Use S3 Cross-Region Replication to copy objects to the destination S3 bucket. Then remove the data from the origin S3 bucket.",
+        "C. Schedule AWS Snowball Edge Storage Optimized device jobs daily to transfer data from each site to the closest Region. Use S3 Cross-Region Replication to copy objects to the destination S3 bucket.",
+        "D. Upload the data from each site to an Amazon EC2 instance in the closest Region. Store the data in an Amazon Elastic Block Store (Amazon EBS) volume. At regular intervals, take an EBS snapshot and copy it to the Region that contains the destination S3 bucket. Restore the EBS volume in that Region."
+      ],
+      "answers": [
+        0
+      ],
+      "note": ""
+    },
+    {
+      "id": "3d319e62-a8cb-4a08-ad19-491901a863e8",
+      "examCode": "CertPro Deep Dive",
+      "number": 24,
+      "text": "A company is running a multi-tier web application on premises. The web application is containerized and runs on a number of Linux hosts connected to a PostgreSQL database that contains user records. The operational overhead of maintaining the infrastructure and capacity planning is limiting the company's growth. A solutions architect must improve the application's infrastructure.   \nWhich combination of actions should the solutions architect take to accomplish this? (Choose two.)",
+      "type": "multi",
+      "options": [
+        "Migrate the PostgreSQL database to Amazon Aurora.",
+        "Migrate the web application to be hosted on Amazon EC2 instances.",
+        "Set up an Amazon CloudFront distribution for the web application content.",
+        "Set up Amazon ElastiCache between the web application and the PostgreSQL database.",
+        "Migrate the web application to be hosted on AWS Fargate with Amazon Elastic Container Service (Amazon ECS)."
+      ],
+      "answers": [
+        0,
+        4
+      ],
+      "note": ""
+    },
+    {
+      "id": "a893cc89-708d-44dc-a1bf-164c2592e73c",
+      "examCode": "CertPro Deep Dive",
+      "number": 25,
+      "text": "A company is preparing to store confidential data in Amazon S3. For compliance reasons, the data must be encrypted at rest. Encryption key usage must be logged for auditing purposes.\nKeys must be rotated every year.\n\nWhich solution meets these requirements and is the MOST operationally efficient?",
+      "type": "single",
+      "options": [
+        "Server-side encryption with customer-provided keys (SSE-C)",
+        "Server-side encryption with Amazon S3 managed keys (SSE-S3)",
+        "Server-side encryption with AWS KMS keys (SSE-KMS) with manual rotation",
+        "Server-side encryption with AWS KMS keys (SSE-KMS) with automatic rotation"
+      ],
+      "answers": [
+        3
+      ],
+      "note": ""
+    }
+  ]
+}

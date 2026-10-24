@@ -103,6 +103,25 @@
     .progress-row { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 10px; color: var(--muted); font-size: 13px; }
     .progress { height: 7px; overflow: hidden; border-radius: 8px; background: #eaeded; margin-bottom: 17px; }
     .progress > span { display: block; height: 100%; background: var(--orange); transition: width .2s; }
+    .cultivation-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; margin-bottom: 20px; }
+    .cultivation-card { min-width: 0; border: 1px solid var(--line); border-radius: 9px; padding: 18px; background: linear-gradient(135deg, #fffaf0, #fff 72%); }
+    .cultivation-card.shop-card { background: #fff; }
+    .cultivation-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .cultivation-heading .eyebrow { margin-bottom: 6px; }
+    .cultivation-heading h3 { margin: 0; font-size: 20px; }
+    .level-badge { flex: 0 0 auto; border-radius: 20px; padding: 7px 11px; color: var(--blue-dark); background: #eaf3fb; font-size: 13px; font-weight: 700; }
+    .cultivation-xp { margin-top: 18px; }
+    .cultivation-xp .progress { height: 10px; margin: 8px 0 0; }
+    .cultivation-xp .progress > span { border-radius: inherit; }
+    .cultivation-stats { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 14px; }
+    .cultivation-stats .pill { font-size: 12px; }
+    .cultivation-desc { margin: 13px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .reward-list { display: grid; gap: 9px; margin-top: 13px; }
+    .reward-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid #eaeded; border-radius: 7px; padding: 10px; }
+    .reward-copy { min-width: 0; }
+    .reward-copy strong, .reward-copy span { display: block; }
+    .reward-copy span { margin-top: 3px; color: var(--muted); font-size: 12px; }
+    .reward-item .btn { flex: 0 0 auto; padding: 7px 11px; font-size: 12px; }
 
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
     .field { display: grid; align-content: start; gap: 7px; }
@@ -143,6 +162,7 @@
       .question-actions { align-items: stretch; flex-wrap: wrap; }
       .question-actions .btn { flex: 1; }
       .manage-item { align-items: flex-start; flex-direction: column; }
+      .cultivation-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -172,6 +192,47 @@
         <span id="questionCount" class="helper"></span>
       </div>
       <div class="panel-body">
+        <div class="cultivation-grid" aria-label="Tiến trình tu luyện">
+          <section class="cultivation-card" aria-labelledby="cultivationTitle">
+            <div class="cultivation-heading">
+              <div>
+                <p class="eyebrow">Hành trình tu tiên</p>
+                <h3 id="cultivationTitle">Đang tải danh hiệu...</h3>
+              </div>
+              <span class="level-badge">Cấp <span id="playerLevel">1</span></span>
+            </div>
+            <div class="cultivation-xp">
+              <div class="progress-row"><span>Kinh nghiệm</span><strong><span id="currentXp">0</span> / 100 EXP</strong></div>
+              <div class="progress" role="progressbar" aria-label="Tiến độ lên cấp" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <span id="cultivationProgress" style="width:0%"></span>
+              </div>
+            </div>
+            <div class="cultivation-stats">
+              <span class="pill">✦ <span id="spiritStones">0</span>&nbsp;linh thạch</span>
+              <span class="pill">✓ <span id="rewardedCount">0</span>&nbsp;câu đã nhận thưởng</span>
+            </div>
+            <p class="cultivation-desc">Mỗi câu đúng lần đầu: +10 EXP và +5 linh thạch. Tích lũy EXP để thăng cấp và nhận danh hiệu mới.</p>
+          </section>
+          <section class="cultivation-card shop-card" aria-labelledby="rewardShopTitle">
+            <div class="cultivation-heading">
+              <div>
+                <p class="eyebrow">Đổi thưởng</p>
+                <h3 id="rewardShopTitle">Cửa hàng linh thạch</h3>
+              </div>
+            </div>
+            <div class="reward-list">
+              <div class="reward-item">
+                <div class="reward-copy"><strong>Lướt Facebook · 15 phút</strong><span>Đã đổi: <span id="facebookRewards">0</span> lượt</span></div>
+                <button id="redeemFacebook" class="btn secondary" type="button">30 linh thạch</button>
+              </div>
+              <div class="reward-item">
+                <div class="reward-copy"><strong>Chơi 1 ván ARAM</strong><span>Đã đổi: <span id="aramRewards">0</span> lượt</span></div>
+                <button id="redeemAram" class="btn secondary" type="button">50 linh thạch</button>
+              </div>
+            </div>
+            <p class="cultivation-desc">Lượt thưởng là cam kết tự thưởng sau khi học, không tự khóa ứng dụng.</p>
+          </section>
+        </div>
         <div class="exam-toolbar">
           <label for="examFilter">Mã đề</label>
           <select id="examFilter" aria-label="Chọn mã đề"></select>
@@ -248,14 +309,31 @@
     (() => {
       "use strict";
       const STORAGE_KEY = "saa-c03-practice-questions-v1";
+      const DEFAULT_QUESTIONS_URL = "./tat-ca-bo-de%20(3).json";
       const ATTEMPTS_STORAGE_KEY = "saa-c03-practice-attempts-v1";
+      const EXP_PER_CORRECT_ANSWER = 10;
+      const STONES_PER_CORRECT_ANSWER = 5;
+      const CULTIVATION_RANKS = [
+        { level: 1, title: "Luyện Khí" },
+        { level: 5, title: "Trúc Cơ" },
+        { level: 10, title: "Kim Đan" },
+        { level: 15, title: "Nguyên Anh" },
+        { level: 20, title: "Hóa Thần" },
+        { level: 30, title: "Luyện Hư" },
+        { level: 40, title: "Hợp Thể" },
+        { level: 50, title: "Đại Thừa" },
+        { level: 60, title: "Độ Kiếp" },
+        { level: 70, title: "Chân Tiên" }
+      ];
       const $ = (selector) => document.querySelector(selector);
       const $$ = (selector) => Array.from(document.querySelectorAll(selector));
       const form = $("#questionForm");
       const optionEditor = $("#optionEditor");
       let toastTimer;
-      let questions = loadQuestions();
-      let attempts = loadAttempts();
+      let defaultQuestions = [];
+      let questions = [];
+      let profile = createDefaultProfile();
+      let attempts = {};
       let editingId = null;
       let visibleQuestions = [];
       let shuffledQuestionIds = null;
@@ -264,20 +342,102 @@
       let checked = false;
       let selected = new Set();
 
-      function loadQuestions() {
+      async function loadDefaultQuestions() {
+        const response = await fetch(DEFAULT_QUESTIONS_URL);
+        if (!response.ok) {
+          throw new Error(`Không thể tải bộ câu hỏi mặc định (HTTP ${response.status}).`);
+        }
+        const parsed = await response.json();
+        if (!parsed || parsed.format !== "saa-c03-practice-questions" || parsed.version !== 1 ||
+            !Array.isArray(parsed.questions) || parsed.questions.length === 0) {
+          throw new Error("Tệp bộ câu hỏi mặc định không đúng định dạng.");
+        }
+        const ids = new Set();
+        const keys = new Set();
+        return parsed.questions.map((question, index) => {
+          const label = `Câu hỏi mặc định thứ ${index + 1}`;
+          if (!question || typeof question !== "object" || Array.isArray(question) ||
+              typeof question.id !== "string" || !question.id.trim() ||
+              typeof question.examCode !== "string" || !question.examCode.trim() ||
+              question.examCode.trim().length > 40 ||
+              !Number.isInteger(question.number) || question.number < 1 ||
+              typeof question.text !== "string" || !question.text.trim() ||
+              (question.type !== "single" && question.type !== "multi") ||
+              !Array.isArray(question.options) || question.options.length < 2 || question.options.length > 6 ||
+              question.options.some((option) => typeof option !== "string" || !option.trim() || option.trim().length > 500) ||
+              !Array.isArray(question.answers) ||
+              question.answers.some((answer) => !Number.isInteger(answer) || answer < 0 || answer >= question.options.length) ||
+              new Set(question.answers).size !== question.answers.length ||
+              (question.type === "single" && question.answers.length !== 1) ||
+              (question.type === "multi" && question.answers.length < 2) ||
+              (question.note !== undefined && typeof question.note !== "string")) {
+            throw new Error(`${label} có dữ liệu không hợp lệ.`);
+          }
+          const key = `${question.examCode.trim().toLocaleLowerCase()}::${question.number}`;
+          if (ids.has(question.id) || keys.has(key)) {
+            throw new Error(`${label} bị trùng mã hoặc số thứ tự.`);
+          }
+          ids.add(question.id);
+          keys.add(key);
+          return {
+            id: question.id,
+            examCode: question.examCode.trim(),
+            number: question.number,
+            text: question.text.trim(),
+            type: question.type,
+            options: question.options.map((option) => option.trim()),
+            answers: [...question.answers],
+            note: question.note || ""
+          };
+        });
+      }
+
+      function loadQuestionChanges() {
         try {
           const saved = localStorage.getItem(STORAGE_KEY);
-          if (!saved) return [];
+          if (!saved) return { custom: [], overrides: {}, deletedDefaultIds: [] };
           const parsed = JSON.parse(saved);
-          if (!Array.isArray(parsed) || parsed.some((q) => !q || typeof q.id !== "string" ||
-              typeof q.examCode !== "string" || !Array.isArray(q.options) || !Array.isArray(q.answers))) {
+          const defaultIds = new Set(defaultQuestions.map((question) => question.id));
+          if (Array.isArray(parsed)) {
+            const overrides = {};
+            const custom = [];
+            parsed.forEach((question) => {
+              if (!question || typeof question.id !== "string" || typeof question.examCode !== "string" ||
+                  !Array.isArray(question.options) || !Array.isArray(question.answers)) {
+                throw new Error("Dữ liệu câu hỏi đã lưu không đúng định dạng.");
+              }
+              if (defaultIds.has(question.id)) overrides[question.id] = question;
+              else custom.push(question);
+            });
+            return { custom, overrides, deletedDefaultIds: [] };
+          }
+          if (!parsed || parsed.version !== 2 || !Array.isArray(parsed.custom) ||
+              !parsed.overrides || typeof parsed.overrides !== "object" || Array.isArray(parsed.overrides) ||
+              !Array.isArray(parsed.deletedDefaultIds) ||
+              parsed.deletedDefaultIds.some((id) => typeof id !== "string" || !defaultIds.has(id))) {
             throw new Error("Dữ liệu câu hỏi đã lưu không đúng định dạng.");
           }
-          return parsed;
+          const overrides = {};
+          for (const [id, question] of Object.entries(parsed.overrides)) {
+            if (!defaultIds.has(id) || !question || question.id !== id ||
+                typeof question.examCode !== "string" || !Array.isArray(question.options) || !Array.isArray(question.answers)) {
+              throw new Error("Dữ liệu câu hỏi đã lưu không đúng định dạng.");
+            }
+            overrides[id] = question;
+          }
+          if (parsed.custom.some((question) => !question || typeof question.id !== "string" ||
+              typeof question.examCode !== "string" || !Array.isArray(question.options) || !Array.isArray(question.answers))) {
+            throw new Error("Dữ liệu câu hỏi đã lưu không đúng định dạng.");
+          }
+          return {
+            custom: parsed.custom,
+            overrides,
+            deletedDefaultIds: [...new Set(parsed.deletedDefaultIds)]
+          };
         } catch (error) {
           console.error("Không thể đọc dữ liệu ôn tập:", error);
           showToast("Không thể đọc dữ liệu đã lưu. Hãy kiểm tra bộ nhớ trình duyệt.");
-          return [];
+          return { custom: [], overrides: {}, deletedDefaultIds: [] };
         }
       }
 
@@ -289,7 +449,15 @@
           if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
             throw new Error("Dữ liệu kết quả đã lưu không đúng định dạng.");
           }
-          return Object.fromEntries(Object.entries(parsed).filter(([id, attempt]) => {
+          const isVersioned = parsed.version === 2;
+          if (isVersioned) {
+            profile = validateProfile(parsed.profile);
+          }
+          const storedAttempts = isVersioned ? parsed.attempts : parsed;
+          if (!storedAttempts || typeof storedAttempts !== "object" || Array.isArray(storedAttempts)) {
+            throw new Error("Dữ liệu kết quả đã lưu không đúng định dạng.");
+          }
+          return Object.fromEntries(Object.entries(storedAttempts).filter(([id, attempt]) => {
             const question = questions.find((item) => item.id === id);
             return question && attempt && typeof attempt.correct === "boolean" &&
               attempt.questionSignature === questionSignature(question) &&
@@ -305,9 +473,49 @@
         }
       }
 
+      function createDefaultProfile() {
+        return { xp: 0, stones: 0, rewardedQuestionIds: [], facebookRewards: 0, aramRewards: 0 };
+      }
+
+      function validateProfile(value) {
+        if (!value || typeof value !== "object" || Array.isArray(value) ||
+            !Number.isInteger(value.xp) || value.xp < 0 ||
+            !Number.isInteger(value.stones) || value.stones < 0 ||
+            !Array.isArray(value.rewardedQuestionIds) || value.rewardedQuestionIds.some((id) => typeof id !== "string") ||
+            !Number.isInteger(value.facebookRewards) || value.facebookRewards < 0 ||
+            !Number.isInteger(value.aramRewards) || value.aramRewards < 0) {
+          throw new Error("Dữ liệu tu luyện đã lưu không đúng định dạng.");
+        }
+        return {
+          xp: value.xp,
+          stones: value.stones,
+          rewardedQuestionIds: [...new Set(value.rewardedQuestionIds)],
+          facebookRewards: value.facebookRewards,
+          aramRewards: value.aramRewards
+        };
+      }
+
       function saveQuestions() {
         try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(questions));
+          const defaultById = new Map(defaultQuestions.map((question) => [question.id, question]));
+          const currentById = new Map(questions.map((question) => [question.id, question]));
+          const overrides = {};
+          const deletedDefaultIds = [];
+          for (const question of defaultQuestions) {
+            const current = currentById.get(question.id);
+            if (!current) {
+              deletedDefaultIds.push(question.id);
+            } else if (JSON.stringify(current) !== JSON.stringify(question)) {
+              overrides[question.id] = current;
+            }
+          }
+          const custom = questions.filter((question) => !defaultById.has(question.id));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            version: 2,
+            custom,
+            overrides,
+            deletedDefaultIds
+          }));
         } catch (error) {
           console.error("Không thể lưu dữ liệu ôn tập:", error);
           showToast("Không thể lưu. Bộ nhớ trình duyệt có thể đã đầy hoặc bị chặn.");
@@ -318,13 +526,56 @@
 
       function saveAttempts() {
         try {
-          localStorage.setItem(ATTEMPTS_STORAGE_KEY, JSON.stringify(attempts));
+          localStorage.setItem(ATTEMPTS_STORAGE_KEY, JSON.stringify({ version: 2, attempts, profile }));
         } catch (error) {
           console.error("Không thể lưu kết quả ôn tập:", error);
           showToast("Không thể lưu kết quả. Bộ nhớ trình duyệt có thể đã đầy hoặc bị chặn.");
           return false;
         }
         return true;
+      }
+
+      function getCultivation() {
+        const level = Math.floor(profile.xp / 100) + 1;
+        const rank = [...CULTIVATION_RANKS].reverse().find((item) => level >= item.level);
+        return { level, title: rank.title, xpInLevel: profile.xp % 100 };
+      }
+
+      function renderCultivation() {
+        const cultivation = getCultivation();
+        $("#cultivationTitle").textContent = cultivation.title;
+        $("#playerLevel").textContent = cultivation.level;
+        $("#currentXp").textContent = cultivation.xpInLevel;
+        $("#spiritStones").textContent = profile.stones;
+        $("#rewardedCount").textContent = profile.rewardedQuestionIds.length;
+        $("#facebookRewards").textContent = profile.facebookRewards;
+        $("#aramRewards").textContent = profile.aramRewards;
+        const progress = $("[role='progressbar']");
+        progress.setAttribute("aria-valuenow", cultivation.xpInLevel);
+        $("#cultivationProgress").style.width = `${cultivation.xpInLevel}%`;
+        $("#redeemFacebook").disabled = profile.stones < 30;
+        $("#redeemAram").disabled = profile.stones < 50;
+      }
+
+      function redeemReward(type) {
+        const cost = type === "facebook" ? 30 : 50;
+        if (profile.stones < cost) return;
+        const previous = profile;
+        profile = {
+          ...profile,
+          stones: profile.stones - cost,
+          facebookRewards: profile.facebookRewards + (type === "facebook" ? 1 : 0),
+          aramRewards: profile.aramRewards + (type === "aram" ? 1 : 0)
+        };
+        if (!saveAttempts()) {
+          profile = previous;
+          renderCultivation();
+          return;
+        }
+        renderCultivation();
+        showToast(type === "facebook"
+          ? "Đã đổi 15 phút lướt Facebook. Hãy tự thưởng sau khi học nhé!"
+          : "Đã đổi 1 lượt chơi ARAM. Hãy tự thưởng sau khi học nhé!");
       }
 
       function escapeHtml(value) {
@@ -434,6 +685,7 @@
       }
 
       function renderPractice() {
+        renderCultivation();
         renderExamFilter();
         const code = $("#examFilter").value;
         const filteredQuestions = questions.filter((question) => !code || question.examCode === code);
@@ -489,7 +741,9 @@
               }).join("")}
             </div>
             <div id="answerStatus" class="status${checked ? (isAnswerCorrect(question) ? " good" : " bad") : ""}" aria-live="polite">
-              ${checked ? (isAnswerCorrect(question) ? "Chính xác! Bạn đã chọn đúng." : "Chưa chính xác. Hãy xem lại các đáp án được đánh dấu màu xanh.") : ""}
+              ${checked ? (isAnswerCorrect(question)
+                ? (profile.rewardedQuestionIds.includes(question.id) ? "Chính xác! Bạn đã nhận thưởng cho câu này." : "Chính xác!")
+                : "Chưa chính xác. Hãy xem lại các đáp án được đánh dấu màu xanh.") : ""}
             </div>
             ${checked && question.note ? `<aside class="note-box"><h3>Ghi chú ôn tập</h3><p>${escapeHtml(question.note)}</p></aside>` : ""}
             <div class="question-actions">
@@ -513,13 +767,34 @@
             $("#answerStatus").className = "status bad";
             return;
           }
-          checked = true;
+          const correct = isAnswerCorrect(question);
+          const firstCorrectAnswer = correct && !profile.rewardedQuestionIds.includes(question.id);
+          const previousAttempts = attempts;
+          const previousProfile = profile;
           attempts[question.id] = {
             answers: [...selected],
-            correct: isAnswerCorrect(question),
+            correct,
             questionSignature: questionSignature(question)
           };
-          saveAttempts();
+          if (firstCorrectAnswer) {
+            profile = {
+              ...profile,
+              xp: profile.xp + EXP_PER_CORRECT_ANSWER,
+              stones: profile.stones + STONES_PER_CORRECT_ANSWER,
+              rewardedQuestionIds: [...profile.rewardedQuestionIds, question.id]
+            };
+          }
+          if (!saveAttempts()) {
+            attempts = previousAttempts;
+            profile = previousProfile;
+            return;
+          }
+          checked = true;
+          const previousLevel = Math.floor(previousProfile.xp / 100) + 1;
+          const newLevel = Math.floor(profile.xp / 100) + 1;
+          if (firstCorrectAnswer) {
+            showToast(`Chính xác! +${EXP_PER_CORRECT_ANSWER} EXP, +${STONES_PER_CORRECT_ANSWER} linh thạch${newLevel > previousLevel ? ` · Thăng cấp ${newLevel}!` : ""}`);
+          }
           renderPractice();
         });
       }
@@ -749,6 +1024,8 @@
         checked = false;
         renderPractice();
       });
+      $("#redeemFacebook").addEventListener("click", () => redeemReward("facebook"));
+      $("#redeemAram").addEventListener("click", () => redeemReward("aram"));
 
       form.addEventListener("submit", (event) => {
         event.preventDefault();
@@ -800,8 +1077,29 @@
         showToast(wasEditing ? "Đã cập nhật câu hỏi." : "Đã lưu câu hỏi.");
       });
 
-      renderOptionEditor(["", "", "", ""], []);
-      renderPractice();
+      async function initialize() {
+        try {
+          defaultQuestions = await loadDefaultQuestions();
+          const changes = loadQuestionChanges();
+          const overrides = changes.overrides;
+          const deletedDefaultIds = new Set(changes.deletedDefaultIds);
+          questions = defaultQuestions
+            .filter((question) => !deletedDefaultIds.has(question.id))
+            .map((question) => overrides[question.id] || question)
+            .concat(changes.custom);
+          attempts = loadAttempts();
+          renderOptionEditor(["", "", "", ""], []);
+          renderCultivation();
+          renderPractice();
+        } catch (error) {
+          console.error("Không thể khởi tạo bộ câu hỏi:", error);
+          $("#questionCount").textContent = "Không thể tải câu hỏi";
+          $("#practiceContent").innerHTML = `<div class="empty"><strong>Không thể tải bộ câu hỏi mặc định</strong>${escapeHtml(error.message || "Hãy kiểm tra tệp JSON và thử tải lại trang.")}</div>`;
+          showToast(error.message || "Không thể tải bộ câu hỏi mặc định.");
+        }
+      }
+
+      initialize();
     })();
   </script>
 </body>
