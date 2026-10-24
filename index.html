@@ -237,6 +237,8 @@
           <label for="examFilter">Mã đề</label>
           <select id="examFilter" aria-label="Chọn mã đề"></select>
           <button id="shuffleButton" class="btn secondary" type="button">Trộn câu hỏi</button>
+          <button id="resetExamButton" class="btn danger" type="button">Reset bộ đề</button>
+          <span class="helper">Kết quả đúng/sai chỉ giữ trong phiên hiện tại; tải lại trang sẽ xóa trạng thái làm bài.</span>
         </div>
         <div id="practiceContent"></div>
       </div>
@@ -311,6 +313,7 @@
       const STORAGE_KEY = "saa-c03-practice-questions-v1";
       const DEFAULT_QUESTIONS_URL = "./tat-ca-bo-de%20(3).json";
       const ATTEMPTS_STORAGE_KEY = "saa-c03-practice-attempts-v1";
+      const USER_NOTES_STORAGE_KEY = "saa-c03-practice-user-notes-v1";
       const EXP_PER_CORRECT_ANSWER = 10;
       const STONES_PER_CORRECT_ANSWER = 5;
       const CULTIVATION_RANKS = [
@@ -334,6 +337,7 @@
       let questions = [];
       let profile = createDefaultProfile();
       let attempts = {};
+      let userNotes = {};
       let editingId = null;
       let visibleQuestions = [];
       let shuffledQuestionIds = null;
@@ -441,34 +445,45 @@
         }
       }
 
-      function loadAttempts() {
+      function loadProfile() {
         try {
           const saved = localStorage.getItem(ATTEMPTS_STORAGE_KEY);
-          if (!saved) return {};
+          if (!saved) return;
           const parsed = JSON.parse(saved);
           if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-            throw new Error("Dữ liệu kết quả đã lưu không đúng định dạng.");
+            throw new Error("Dữ liệu tu luyện đã lưu không đúng định dạng.");
           }
-          const isVersioned = parsed.version === 2;
-          if (isVersioned) {
+          if (parsed.version === 2 || parsed.version === 3) {
             profile = validateProfile(parsed.profile);
           }
-          const storedAttempts = isVersioned ? parsed.attempts : parsed;
-          if (!storedAttempts || typeof storedAttempts !== "object" || Array.isArray(storedAttempts)) {
-            throw new Error("Dữ liệu kết quả đã lưu không đúng định dạng.");
+          if (parsed.version !== undefined && parsed.version !== 2 && parsed.version !== 3) {
+            throw new Error("Phiên bản dữ liệu tu luyện không được hỗ trợ.");
           }
-          return Object.fromEntries(Object.entries(storedAttempts).filter(([id, attempt]) => {
-            const question = questions.find((item) => item.id === id);
-            return question && attempt && typeof attempt.correct === "boolean" &&
-              attempt.questionSignature === questionSignature(question) &&
-              Array.isArray(attempt.answers) && attempt.answers.length > 0 &&
-              attempt.answers.every((answer) => Number.isInteger(answer) && answer >= 0 && answer < question.options.length) &&
-              new Set(attempt.answers).size === attempt.answers.length &&
-              attempt.correct === isSelectionCorrect(question, attempt.answers);
-          }));
+          if (parsed.version === 2) {
+            saveProfile();
+          } else if (parsed.version === undefined) {
+            localStorage.removeItem(ATTEMPTS_STORAGE_KEY);
+          }
         } catch (error) {
-          console.error("Không thể đọc kết quả ôn tập:", error);
-          showToast("Không thể đọc kết quả đã lưu. Hãy kiểm tra bộ nhớ trình duyệt.");
+          console.error("Không thể đọc dữ liệu tu luyện:", error);
+          showToast("Không thể đọc dữ liệu tu luyện đã lưu. Hãy kiểm tra bộ nhớ trình duyệt.");
+        }
+      }
+
+      function loadUserNotes() {
+        try {
+          const saved = localStorage.getItem(USER_NOTES_STORAGE_KEY);
+          if (!saved) return {};
+          const parsed = JSON.parse(saved);
+          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) ||
+              Object.entries(parsed).some(([id, note]) => !id || typeof note !== "string")) {
+            throw new Error("Dữ liệu ghi chú cá nhân đã lưu không đúng định dạng.");
+          }
+          const questionIds = new Set(questions.map((question) => question.id));
+          return Object.fromEntries(Object.entries(parsed).filter(([id]) => questionIds.has(id)));
+        } catch (error) {
+          console.error("Không thể đọc ghi chú cá nhân:", error);
+          showToast("Không thể đọc ghi chú đã lưu. Hãy kiểm tra bộ nhớ trình duyệt.");
           return {};
         }
       }
@@ -524,12 +539,23 @@
         return true;
       }
 
-      function saveAttempts() {
+      function saveProfile() {
         try {
-          localStorage.setItem(ATTEMPTS_STORAGE_KEY, JSON.stringify({ version: 2, attempts, profile }));
+          localStorage.setItem(ATTEMPTS_STORAGE_KEY, JSON.stringify({ version: 3, profile }));
         } catch (error) {
-          console.error("Không thể lưu kết quả ôn tập:", error);
-          showToast("Không thể lưu kết quả. Bộ nhớ trình duyệt có thể đã đầy hoặc bị chặn.");
+          console.error("Không thể lưu dữ liệu tu luyện:", error);
+          showToast("Không thể lưu tiến trình tu luyện. Bộ nhớ trình duyệt có thể đã đầy hoặc bị chặn.");
+          return false;
+        }
+        return true;
+      }
+
+      function saveUserNotes() {
+        try {
+          localStorage.setItem(USER_NOTES_STORAGE_KEY, JSON.stringify(userNotes));
+        } catch (error) {
+          console.error("Không thể lưu ghi chú cá nhân:", error);
+          showToast("Không thể lưu ghi chú. Bộ nhớ trình duyệt có thể đã đầy hoặc bị chặn.");
           return false;
         }
         return true;
@@ -567,7 +593,7 @@
           facebookRewards: profile.facebookRewards + (type === "facebook" ? 1 : 0),
           aramRewards: profile.aramRewards + (type === "aram" ? 1 : 0)
         };
-        if (!saveAttempts()) {
+        if (!saveProfile()) {
           profile = previous;
           renderCultivation();
           return;
@@ -582,12 +608,6 @@
         return String(value).replace(/[&<>"']/g, (char) => ({
           "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
         })[char]);
-      }
-
-      function questionSignature(question) {
-        return JSON.stringify([
-          question.examCode, question.number, question.text, question.type, question.options, question.answers
-        ]);
       }
 
       function showToast(message) {
@@ -709,6 +729,7 @@
         }
         const progress = Math.round(((currentIndex + 1) / visibleQuestions.length) * 100);
         const isMulti = question.type === "multi";
+        const userNote = userNotes[question.id] || "";
         const completedAttempts = visibleQuestions
           .map((item) => attempts[item.id])
           .filter(Boolean);
@@ -745,7 +766,14 @@
                 ? (profile.rewardedQuestionIds.includes(question.id) ? "Chính xác! Bạn đã nhận thưởng cho câu này." : "Chính xác!")
                 : "Chưa chính xác. Hãy xem lại các đáp án được đánh dấu màu xanh.") : ""}
             </div>
-            ${checked && question.note ? `<aside class="note-box"><h3>Ghi chú ôn tập</h3><p>${escapeHtml(question.note)}</p></aside>` : ""}
+            ${checked && question.note ? `<aside class="note-box"><h3>Ghi chú từ bộ đề</h3><p>${escapeHtml(question.note)}</p></aside>` : ""}
+            ${checked ? `<section class="note-box" aria-labelledby="userNoteHeading">
+              <h3 id="userNoteHeading">Ghi chú của bạn</h3>
+              ${userNote ? `<p class="user-note-preview">${escapeHtml(userNote)}</p>` : ""}
+              <label class="helper" for="userNoteInput">Ghi lại điều bạn muốn nhớ cho lần ôn tập sau.</label>
+              <textarea id="userNoteInput" maxlength="2000" placeholder="Nhập ghi chú của bạn...">${escapeHtml(userNote)}</textarea>
+              <button id="saveUserNote" class="btn secondary" type="button">Lưu ghi chú</button>
+            </section>` : ""}
             <div class="question-actions">
               <button class="btn secondary" id="previousQuestion" type="button" ${currentIndex === 0 ? "disabled" : ""}>← Câu trước</button>
               <button class="btn ${checked ? "secondary" : "orange"}" id="checkAnswer" type="button" ${checked ? "disabled" : ""}>Kiểm tra đáp án</button>
@@ -761,6 +789,21 @@
         }));
         $("#previousQuestion").addEventListener("click", () => moveQuestion(-1));
         $("#nextQuestion").addEventListener("click", () => moveQuestion(1));
+        if (checked) {
+          $("#saveUserNote").addEventListener("click", () => {
+            const note = $("#userNoteInput").value.trim();
+            const previousNotes = userNotes;
+            userNotes = { ...userNotes };
+            if (note) userNotes[question.id] = note;
+            else delete userNotes[question.id];
+            if (!saveUserNotes()) {
+              userNotes = previousNotes;
+              return;
+            }
+            renderPractice();
+            showToast(note ? "Đã lưu ghi chú cho câu này." : "Đã xóa ghi chú cho câu này.");
+          });
+        }
         $("#checkAnswer").addEventListener("click", () => {
           if (!selected.size) {
             $("#answerStatus").textContent = "Hãy chọn ít nhất một đáp án trước khi kiểm tra.";
@@ -769,13 +812,12 @@
           }
           const correct = isAnswerCorrect(question);
           const firstCorrectAnswer = correct && !profile.rewardedQuestionIds.includes(question.id);
-          const previousAttempts = attempts;
           const previousProfile = profile;
           attempts[question.id] = {
             answers: [...selected],
-            correct,
-            questionSignature: questionSignature(question)
+            correct
           };
+          let rewardSaved = false;
           if (firstCorrectAnswer) {
             profile = {
               ...profile,
@@ -783,19 +825,32 @@
               stones: profile.stones + STONES_PER_CORRECT_ANSWER,
               rewardedQuestionIds: [...profile.rewardedQuestionIds, question.id]
             };
-          }
-          if (!saveAttempts()) {
-            attempts = previousAttempts;
-            profile = previousProfile;
-            return;
+            rewardSaved = saveProfile();
+            if (!rewardSaved) profile = previousProfile;
           }
           checked = true;
           const previousLevel = Math.floor(previousProfile.xp / 100) + 1;
           const newLevel = Math.floor(profile.xp / 100) + 1;
-          if (firstCorrectAnswer) {
+          if (rewardSaved) {
             showToast(`Chính xác! +${EXP_PER_CORRECT_ANSWER} EXP, +${STONES_PER_CORRECT_ANSWER} linh thạch${newLevel > previousLevel ? ` · Thăng cấp ${newLevel}!` : ""}`);
           }
           renderPractice();
+        });
+        $("#resetExamButton").addEventListener("click", () => {
+          const code = $("#examFilter").value;
+          const questionIds = questions
+            .filter((question) => !code || question.examCode === code)
+            .map((question) => question.id);
+          const scope = code ? `bộ đề ${code}` : "tất cả bộ đề";
+          if (!window.confirm(`Reset ${scope}? Trạng thái đã làm đúng/sai sẽ bị xóa. EXP, linh thạch và ghi chú vẫn được giữ.`)) return;
+          questionIds.forEach((id) => delete attempts[id]);
+          currentIndex = 0;
+          activeQuestionId = null;
+          selected = new Set();
+          checked = false;
+          shuffledQuestionIds = null;
+          renderPractice();
+          showToast(`Đã reset ${scope}. Tiến trình tu luyện và ghi chú vẫn được giữ.`);
         });
       }
 
@@ -864,7 +919,9 @@
           return;
         }
         delete attempts[id];
-        saveAttempts();
+        const previousNote = userNotes[id];
+        delete userNotes[id];
+        if (!saveUserNotes() && previousNote !== undefined) userNotes[id] = previousNote;
         if (activeQuestionId === id) activeQuestionId = null;
         shuffledQuestionIds = null;
         if (editingId === id) resetForm();
@@ -974,7 +1031,6 @@
           }
           if (wasEditing) {
             delete attempts[record.id];
-            saveAttempts();
             if (activeQuestionId === record.id) activeQuestionId = null;
           }
           shuffledQuestionIds = null;
@@ -1087,7 +1143,8 @@
             .filter((question) => !deletedDefaultIds.has(question.id))
             .map((question) => overrides[question.id] || question)
             .concat(changes.custom);
-          attempts = loadAttempts();
+          loadProfile();
+          userNotes = loadUserNotes();
           renderOptionEditor(["", "", "", ""], []);
           renderCultivation();
           renderPractice();
